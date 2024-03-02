@@ -1,0 +1,113 @@
+﻿/ read numbers
+			CLEAR
+            STORE result
+            INPUT
+            STORE dividend
+            CLEAR
+            INPUT
+            STORE divisor
+            CLEAR
+            
+/ check for negatives
+			LOAD dividend
+			SKIPCOND 000	/ if dividend is negative, negate and set dend_flag
+            				/ otherwise, skip forward
+            JUMP nonneg_dend
+            
+            SUBT dividend
+			SUBT dividend
+            STORE dividend
+            CLEAR
+            ADD ONE
+            STORE dend_flag
+
+nonneg_dend,CLEAR
+            
+			LOAD divisor
+			SKIPCOND 000	/ if divisor is negative, negate and set flag dsor_flag
+            				/ otherwise, skip forward
+            JUMP nonneg_dsor
+			
+            SUBT divisor
+            SUBT divisor
+            STORE divisor
+            CLEAR
+            ADD ONE
+            STORE dsor_flag
+
+nonneg_dsor,SKIPCOND 400 / check if division is possible
+			JUMP loop
+            HALT / stop if divisor == 0
+
+/ loop for performing iterative subtraction
+/ now dividend >= 0, divisor > 0
+loop,       LOAD dividend
+			SUBT divisor
+            SKIPCOND 000	/ if negative, finish the division
+            				/ otherwise, continue
+            JUMP nonneg
+            JUMP end_div
+nonneg,     STORE dividend
+            LOAD result
+            ADD ONE
+            STORE result
+            JUMP loop
+
+end_div,    ADD divisor
+            STORE remainder
+            
+/ check for flags
+			CLEAR / dividend flag start
+			LOAD dend_flag
+            SKIPCOND 800
+            JUMP check_dsor
+			
+            CLEAR
+            LOAD remainder
+            SKIPCOND 800
+            JUMP remainder0
+            LOAD result
+			ADD ONE
+            STORE result
+            
+remainder0, CLEAR
+            LOAD result
+            SUBT result
+            SUBT result
+            STORE result
+            
+            CLEAR
+            LOAD remainder
+            SKIPCOND 800
+            JUMP check_dsor
+            CLEAR
+            LOAD divisor
+            SUBT remainder
+            STORE remainder / dividend flag end
+            
+check_dsor,	CLEAR / divisor flag start
+            LOAD dsor_flag
+			SKIPCOND 800
+            JUMP out
+            
+            CLEAR
+            LOAD result
+            SUBT result
+            SUBT result
+            STORE result
+
+out,        CLEAR
+			LOAD result
+            OUTPUT
+            CLEAR
+            LOAD remainder
+            OUTPUT
+            HALT
+            
+dividend,	DEC 0
+divisor, 	DEC 1
+dend_flag,	HEX 0
+dsor_flag,	HEX 0
+result, 	DEC 0
+remainder,	DEC 0
+ONE,		DEC 1

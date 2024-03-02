@@ -1,0 +1,102 @@
+﻿			CLEAR
+            JUMP tohex
+
+digit_idx,	HEX		4 / pointer to currently used digit
+digit_ptr,	HEX		4 / pointer to digit array
+digit1,		HEX		0
+digit2,		HEX		0
+digit3,		HEX		0
+digit4,		HEX		0
+
+hex_idx,	HEX 	A / pointer to currently used hex value
+hex_ptr,	HEX		A / pointer to hex array
+hexval,		HEX		30 / 0
+			HEX		31 / 1
+            HEX		32 / 2
+            HEX		33 / 3
+            HEX		34 / 4
+            HEX		35 / 5
+            HEX		36 / 6
+            HEX		37 / 7
+            HEX		38 / 8
+            HEX		39 / 9
+            HEX		41 / A
+            HEX		42 / B
+            HEX		43 / C
+            HEX		44 / D 
+            HEX		45 / E
+            HEX		46 / F
+
+tohex,      LOAD number
+            STORE dividend
+			
+loop,		CLEAR
+			STORE quotient	/ reset quotient to 0
+			LOAD dividend
+			SKIPCOND 800	/ if dividend > 0, continue division
+            				/ otherwise, finish division process
+			JUMP push_idx
+            
+div_loop,   LOAD dividend	/ iterative subtraction to divide dividend with remainder by 16
+							/ remainder is the least significant, not yet stored digit
+			SUBT SIXTEEN
+            SKIPCOND 000	/ if negative, finish the current division
+            				/ otherwise, continue
+            JUMP nonneg
+            JUMP end_div
+nonneg,     STORE dividend  / dividend -= 16
+            LOAD quotient
+            ADD ONE			/ quotient += 1
+            STORE quotient
+            JUMP div_loop	/ next loop cycle
+
+end_div,    ADD SIXTEEN			/ dividend < 0, reverse last subtraction to obtain remainder
+            STOREI digit_idx	/ store the obtained digit
+            CLEAR
+            LOAD digit_idx
+            ADD ONE				/ move to the next digit in the array
+            STORE digit_idx
+            LOAD quotient
+            STORE dividend		/ new_dividend = old_quotient
+            CLEAR
+            JUMP loop			/ repeat loop
+            
+push_idx,	CLEAR
+			LOAD digit_idx
+			SUBT ONE			/ decrease digit index in case it's out of bounds
+            STORE digit_idx
+push_rec,	CLEAR				/ increase digit index until it points to the last digit
+			LOAD digit_idx
+			SUBT THREE
+            SUBT digit_ptr
+            SKIPCOND 000		/ is the index pointing to the last digit yet?
+            JUMP out
+            CLEAR
+            LOAD digit_idx
+            ADD ONE				/ increase index
+            STORE digit_idx
+            JUMP push_rec
+
+out,		CLEAR
+			LOAD hex_ptr		/ load hex pointer
+			ADDI digit_idx		/ add digit
+            STORE hex_idx		/ store as hex address
+            LOADI hex_idx		/ load value hex digit under the address
+			OUTPUT
+            CLEAR
+            LOAD digit_idx
+            SUBT digit_ptr
+            SKIPCOND 800		/ have 4 digits been printed out?
+            HALT
+            LOAD digit_idx
+            SUBT ONE			/ move to next digit
+			STORE digit_idx
+            JUMP out
+
+number,		DEC		1234
+dividend,	DEC		0
+quotient,	DEC		0
+            
+ONE,		DEC 	1
+THREE,		DEC		3
+SIXTEEN,	DEC 	16

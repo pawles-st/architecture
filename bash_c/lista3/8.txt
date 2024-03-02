@@ -1,0 +1,50 @@
+Załóżmy, że mamy proces z PID_PR = [PID procesu] (który odnajdujemy np. poleceniem pgrep). Chcielibyśmy zmienić jego standardowe wejście/wyjście/wyjście błędu bez zatrzymywania procesu. 
+W tym celu możemy zastosować następujące podejście:
+
+Uruchamiamy gdb w terminalu i podpinamy się pod proces, np. wpisując w terminalu:
+
+$ gdb --pid=PID_PR
+
+Konieczne mogą być uprawnienia użytkownika root, wtedy korzystamy z polecenia sudo:
+
+$ sudo gdb --pid=PID_PR
+
+po czym wpisujemy hasło.
+
+Terminal powinien uruchomić gdb, a znak zachęty powinien zmienić się na (gdb).
+
+Użyjemy funkcji open(), dup2() oraz close(). W gdb należy wpisać
+
+(gdb) call (int)open("[nazwa pliku].txt", 01|0100|02000, 0666)
+
+gdzie [nazwa pliku] zamieniamy na ścieżkę do pliku, do którego chcemy zrobić przekierowanie. 01|0100|02000 w powyższym polecenie oznacza O_WRONLY|O_CREAT|O_APPEND,
+czyli flagi "otwórz plik tylko do zapisu", "jeśli plik o podanej ścieżce nie istnieje, stwórz go" oraz "jeśli plik istnieje, dopisz do niego zawartość wyniku"
+
+w efekcie powinniśmy zobaczyć w terminalu linijkę podobną do poniższej:
+
+$1 = 3
+
+oznaczającą, że deskryptor do pliku ma wartość 3.
+
+Następnie wpisujemy:
+
+(gdb) call (int)dup2(3, [0, 1, lub 2])
+
+aby zduplikować deskryptor pliku o wartości 3 i zastąpić nim deskryptor o dotychczasowej wartości z zakresu {0, 1, 2}
+w zależności od tego, czy chcemy zastąpić standardowe wejście (0), wyjście (1), czy wyjście błędu (2).
+(Jeśli nowy deskryptor pliku z poprzedniego kroku miał wartość inną niż 3,
+należy oczywiście zmienić odpowiednio wartość pierwszego argumentu funkcji w tym kroku)
+
+Pod koniec musimy jeszcze zamknąć nowo utworzony deskryptor (chyba, że będziemy z niego korzystać), wykonując polecenie poniżej:
+
+(gdb) call (int)close(3)
+
+(oczywiście, jak poprzednio, zamykamy nowo utworzony deskryptor pliku, więc nie zawsze ten o wartości 3)
+
+Przekierowanie zostało zakończone, jedyne co należy zrobić to wyjść z gdb poleceniem exit:
+
+(gdb) exit
+
+oraz sprawdzić czy przekierowanie się udało, korzystając z polecenia ls:
+
+$ ls -l /proc/PID_PR/fd
